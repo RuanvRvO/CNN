@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Vision Learning Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .topic-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topic-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .topic-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .topic-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .topic-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .topic-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1.05em;
+        }
+
+        .topic-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .topic-features li {
+            padding: 8px 0;
+            color: #555;
+            display: flex;
+            align-items: center;
+        }
+
+        .topic-features li::before {
+            content: '✓';
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .difficulty {
+            display: inline-block;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .difficulty.beginner {
+            background: #d1f2eb;
+            color: #0f5132;
+        }
+
+        .difficulty.intermediate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty.advanced {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .topic-card:hover .cta-button {
+            transform: scale(1.05);
+        }
+
+        .info-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-top: 30px;
+        }
+
+        .info-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .info-section p {
+            color: #666;
+            line-height: 1.8;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+
+        .key-concepts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .concept-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .concept-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .concept-card p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .topics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Computer Vision Learning Hub</h1>
+            <p>Interactive demos to master AI and computer vision concepts</p>
+        </div>
+
+        <div class="topics-grid">
+            <!-- Object Detection -->
+            <a href="object-detection.html" class="topic-card">
+                <div class="topic-icon">📦</div>
+                <h2 class="topic-title">Object Detection</h2>
+                <p class="topic-description">
+                    Learn how AI identifies and locates multiple objects in images and video streams in real-time.
+                </p>
+                <ul class="topic-features">
+                    <li>Real-time webcam detection</li>
+                    <li>80+ object categories</li>
+                    <li>Bounding boxes & confidence scores</li>
+                    <li>COCO-SSD model</li>
+                </ul>
+                <span class="difficulty beginner">Beginner Friendly</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+
+            <!-- Image Classification -->
+            <a href="image-classification.html" class="topic-card">
+                <div class="topic-icon">🖼️</div>
+                <h2 class="topic-title">Image Classification</h2>
+                <p class="topic-description">
+                    Understand how neural networks categorize entire images into predefined classes with probability scores.
+                </p>
+                <ul class="topic-features">
+                    <li>1000+ object categories</li>
+                    <li>Top-5 predictions with probabilities</li>
+                    <li>MobileNet architecture</li>
+                    <li>Transfer learning examples</li>
+                </ul>
+                <span class="difficulty beginner">Beginner Friendly</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+
+            <!-- Pose Detection -->
+            <a href="pose-detection.html" class="topic-card">
+                <div class="topic-icon">🤸</div>
+                <h2 class="topic-title">Pose Detection</h2>
+                <p class="topic-description">
+                    Discover how AI tracks human body positions and movements by detecting key skeletal points.
+                </p>
+                <ul class="topic-features">
+                    <li>17 body keypoints tracking</li>
+                    <li>Real-time pose estimation</li>
+                    <li>Skeleton visualization</li>
+                    <li>Fitness & motion analysis</li>
+                </ul>
+                <span class="difficulty intermediate">Intermediate</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+
+            <!-- Face Detection -->
+            <a href="face-detection.html" class="topic-card">
+                <div class="topic-icon">😊</div>
+                <h2 class="topic-title">Face Detection</h2>
+                <p class="topic-description">
+                    Explore facial recognition technology that identifies faces and detects facial landmarks in images.
+                </p>
+                <ul class="topic-features">
+                    <li>Multiple face detection</li>
+                    <li>Facial landmark mapping</li>
+                    <li>Expression analysis</li>
+                    <li>Security applications</li>
+                </ul>
+                <span class="difficulty intermediate">Intermediate</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+
+            <!-- Hand Tracking -->
+            <a href="hand-tracking.html" class="topic-card">
+                <div class="topic-icon">✋</div>
+                <h2 class="topic-title">Hand Tracking</h2>
+                <p class="topic-description">
+                    Learn how AI detects and tracks hand movements, enabling gesture-based interactions and controls.
+                </p>
+                <ul class="topic-features">
+                    <li>21 hand landmarks</li>
+                    <li>Gesture recognition</li>
+                    <li>Finger tracking</li>
+                    <li>AR/VR applications</li>
+                </ul>
+                <span class="difficulty advanced">Advanced</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+
+            <!-- Semantic Segmentation -->
+            <a href="semantic-segmentation.html" class="topic-card">
+                <div class="topic-icon">🎨</div>
+                <h2 class="topic-title">Semantic Segmentation</h2>
+                <p class="topic-description">
+                    Understand pixel-level classification that identifies what category each pixel belongs to in an image.
+                </p>
+                <ul class="topic-features">
+                    <li>Pixel-level labeling</li>
+                    <li>Background removal</li>
+                    <li>Scene understanding</li>
+                    <li>Medical imaging</li>
+                </ul>
+                <span class="difficulty advanced">Advanced</span>
+                <div class="cta-button">Start Learning →</div>
+            </a>
+        </div>
+
+        <div class="info-section">
+            <h2>🎯 Why Learn Computer Vision?</h2>
+            <p>
+                Computer vision is one of the fastest-growing fields in AI, powering everything from self-driving cars 
+                to medical diagnostics, facial recognition systems to augmented reality apps.
+            </p>
+            <p>
+                These interactive demos will help you understand the core concepts behind modern tagless detection 
+                systems and prepare you for technical interviews in AI and computer vision roles.
+            </p>
+
+            <div class="key-concepts">
+                <div class="concept-card">
+                    <h3>🧠 Neural Networks</h3>
+                    <p>Learn how artificial neural networks mimic the human brain to process visual information.</p>
+                </div>
+                <div class="concept-card">
+                    <h3>🔍 Feature Detection</h3>
+                    <p>Understand how AI identifies edges, textures, shapes, and patterns in images.</p>
+                </div>
+                <div class="concept-card">
+                    <h3>📊 Training & Datasets</h3>
+                    <p>Discover how models learn from millions of labeled images to make accurate predictions.</p>
+                </div>
+                <div class="concept-card">
+                    <h3>⚡ Real-Time Processing</h3>
+                    <p>Explore optimization techniques that enable CV systems to run at 30+ FPS on any device.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

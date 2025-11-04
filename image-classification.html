@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classification Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            color: #764ba2;
+            transform: translateX(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        #status {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        #status.loading {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        #status.ready {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button, .upload-label {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+            background: #667eea;
+        }
+
+        button:hover, .upload-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #imageUpload {
+            display: none;
+        }
+
+        .demo-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .image-area {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .results-area {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        #preview {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        #preview.show {
+            display: block;
+        }
+
+        .predictions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .predictions h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .prediction-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .prediction-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .prediction-rank {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .prediction-content {
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .prediction-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+            text-transform: capitalize;
+            margin-bottom: 5px;
+        }
+
+        .prediction-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .prediction-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+        }
+
+        .prediction-percentage {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .explanation {
+            background: #f0f4f8;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .explanation h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .explanation p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .explanation ul {
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin-bottom: 10px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← Back to Learning Hub</a>
+        
+        <h1>🖼️ Image Classification</h1>
+        <p class="subtitle">Understanding how AI categorizes images into classes</p>
+
+        <div class="info-box">
+            <h3>What is Image Classification?</h3>
+            <p>
+                Image classification is a fundamental computer vision task where the AI model assigns a single label 
+                to an entire image. Unlike object detection, it doesn't locate objects - it simply answers "What is this?"
+            </p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>The image is processed through multiple neural network layers</li>
+                <li>Features are extracted at different levels (edges → shapes → objects)</li>
+                <li>The model outputs probabilities for each of 1000 possible categories</li>
+                <li>We show you the top 5 most likely classifications</li>
+            </ul>
+        </div>
+
+        <div id="status" class="loading">Loading MobileNet model...</div>
+
+        <div class="controls">
+            <label for="imageUpload" class="upload-label">📤 Upload Image</label>
+            <input type="file" id="imageUpload" accept="image/*">
+            <button id="sampleBtn">🎲 Try Sample Image</button>
+        </div>
+
+        <div class="demo-container">
+            <div class="image-area">
+                <img id="preview" alt="Preview">
+            </div>
+            <div class="results-area">
+                <div class="predictions">
+                    <h3>Top 5 Predictions</h3>
+                    <div id="predictionsList">
+                        <p style="color: #666; text-align: center;">Upload an image to see predictions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-value" id="processingTime">--</div>
+                <div class="stat-label">Processing Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="confidence">--</div>
+                <div class="stat-label">Top Confidence</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1000</div>
+                <div class="stat-label">Total Classes</div>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>🧠 How Image Classification Works</h3>
+            <p>
+                <strong>MobileNet Architecture:</strong> This demo uses MobileNet, a lightweight neural network 
+                designed for mobile and embedded devices. It's trained on ImageNet dataset with 1000 categories.
+            </p>
+            <p><strong>The Process:</strong></p>
+            <ul>
+                <li><strong>Input Layer:</strong> Image is resized to 224x224 pixels</li>
+                <li><strong>Convolutional Layers:</strong> Extract features like edges, textures, patterns</li>
+                <li><strong>Pooling Layers:</strong> Reduce dimensions while keeping important information</li>
+                <li><strong>Dense Layers:</strong> Combine features to make final classification</li>
+                <li><strong>Output Layer:</strong> 1000 neurons, each representing a class with probability</li>
+            </ul>
+            <p>
+                <strong>Real-World Applications:</strong> Medical diagnosis (identifying diseases from X-rays), 
+                quality control (detecting defective products), content moderation (filtering inappropriate images), 
+                and product search (visual search engines).
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let model;
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        const predictionsList = document.getElementById('predictionsList');
+        const imageUpload = document.getElementById('imageUpload');
+        const sampleBtn = document.getElementById('sampleBtn');
+
+        const sampleImages = [
+            'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500',
+            'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500',
+            'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500',
+            'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=500'
+        ];
+        let currentSample = 0;
+
+        async function loadModel() {
+            try {
+                status.textContent = 'Loading MobileNet model... This may take a moment.';
+                status.className = 'loading';
+                
+                model = await mobilenet.load();
+                
+                status.textContent = '✓ Model Ready! Upload an image or try a sample.';
+                status.className = 'ready';
+                
+                console.log('MobileNet loaded successfully');
+            } catch (error) {
+                status.textContent = '✗ Error loading model. Please refresh the page.';
+                console.error('Error loading model:', error);
+            }
+        }
+
+        async function classifyImage(img) {
+            status.textContent = '🔍 Analyzing image...';
+            status.className = 'loading';
+
+            const startTime = performance.now();
+            const predictions = await model.classify(img);
+            const endTime = performance.now();
+            const processingTime = Math.round(endTime - startTime);
+
+            displayPredictions(predictions, processingTime);
+
+            status.textContent = '✓ Classification complete!';
+            status.className = 'ready';
+        }
+
+        function displayPredictions(predictions, processingTime) {
+            predictionsList.innerHTML = '';
+
+            predictions.forEach((pred, index) => {
+                const percentage = (pred.probability * 100).toFixed(1);
+                
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                item.innerHTML = `
+                    <div class="prediction-rank">${index + 1}</div>
+                    <div class="prediction-content">
+                        <div class="prediction-label">${pred.className}</div>
+                        <div class="prediction-bar">
+                            <div class="prediction-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                    <div class="prediction-percentage">${percentage}%</div>
+                `;
+                predictionsList.appendChild(item);
+            });
+
+            document.getElementById('processingTime').textContent = processingTime + 'ms';
+            document.getElementById('confidence').textContent = (predictions[0].probability * 100).toFixed(1) + '%';
+        }
+
+        imageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const img = new Image();
+            img.onload = async () => {
+                preview.src = img.src;
+                preview.classList.add('show');
+                await classifyImage(img);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+
+        sampleBtn.addEventListener('click', async () => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = async () => {
+                preview.src = img.src;
+                preview.classList.add('show');
+                await classifyImage(img);
+            };
+            
+            img.src = sampleImages[currentSample];
+            currentSample = (currentSample + 1) % sampleImages.length;
+        });
+
+        loadModel();
+    </script>
+</body>
+</html>

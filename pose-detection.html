@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pose Detection Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            color: #764ba2;
+            transform: translateX(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        #status {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        #status.loading {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        #status.ready {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+            background: #667eea;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .danger-btn {
+            background: #ef5350;
+        }
+
+        .danger-btn:hover {
+            background: #e53935;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        video, canvas {
+            width: 100%;
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .keypoints-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .keypoints-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .keypoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .keypoint-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .keypoint-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #667eea;
+        }
+
+        .keypoint-name {
+            font-size: 0.9em;
+            color: #555;
+            text-transform: capitalize;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .explanation {
+            background: #f0f4f8;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .explanation h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .explanation p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .explanation ul {
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin-bottom: 10px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← Back to Learning Hub</a>
+        
+        <h1>🤸 Pose Detection</h1>
+        <p class="subtitle">Tracking human body movements in real-time</p>
+
+        <div class="info-box">
+            <h3>What is Pose Detection?</h3>
+            <p>
+                Pose detection (or pose estimation) is the task of detecting the position and orientation of a person's 
+                body parts. The AI identifies 17 key body points (keypoints) like nose, shoulders, elbows, hips, knees, etc.
+            </p>
+            <p><strong>Applications:</strong></p>
+            <ul>
+                <li><strong>Fitness & Sports:</strong> Analyze exercise form, count reps, track athletic performance</li>
+                <li><strong>Gaming & AR:</strong> Body-controlled games, virtual try-ons, filters</li>
+                <li><strong>Healthcare:</strong> Physical therapy monitoring, gait analysis</li>
+                <li><strong>Security:</strong> Behavior analysis, fall detection</li>
+            </ul>
+        </div>
+
+        <div id="status" class="loading">Loading MoveNet pose detection model...</div>
+
+        <div class="controls">
+            <button id="startBtn">🎥 Start Webcam</button>
+            <button id="stopBtn" class="danger-btn hidden">⏹️ Stop</button>
+        </div>
+
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="poseCount">0</div>
+                <div class="stat-label">Poses Detected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="confidence">0%</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="fps">0</div>
+                <div class="stat-label">FPS</div>
+            </div>
+        </div>
+
+        <div class="keypoints-info">
+            <h3>17 Body Keypoints Tracked</h3>
+            <div class="keypoints-grid" id="keypointsList"></div>
+        </div>
+
+        <div class="explanation">
+            <h3>🧠 How Pose Detection Works</h3>
+            <p>
+                <strong>MoveNet Model:</strong> This demo uses Google's MoveNet, a fast and accurate pose estimation model 
+                designed for real-time applications on various devices.
+            </p>
+            <p><strong>The Detection Process:</strong></p>
+            <ul>
+                <li><strong>Input:</strong> Each video frame is processed by the neural network</li>
+                <li><strong>Feature Extraction:</strong> The model identifies body-related features like limbs, joints</li>
+                <li><strong>Keypoint Localization:</strong> 17 body keypoints are predicted with x, y coordinates</li>
+                <li><strong>Confidence Scores:</strong> Each keypoint has a confidence value (0-1) indicating detection certainty</li>
+                <li><strong>Skeleton Drawing:</strong> Keypoints are connected to visualize the body structure</li>
+            </ul>
+            <p>
+                <strong>Technical Details:</strong> The model outputs keypoint coordinates normalized to 0-1 range, 
+                which are then scaled to match the video dimensions. Lines connect related keypoints (e.g., shoulder to elbow, 
+                elbow to wrist) to form a skeleton visualization.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let detector;
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream;
+        let isDetecting = false;
+        let animationId;
+        let frameCount = 0;
+        let lastTime = Date.now();
+
+        const keypoints = [
+            'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+            'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+            'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+            'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+        ];
+
+        const adjacentKeyPoints = [
+            ['left_shoulder', 'right_shoulder'],
+            ['left_shoulder', 'left_elbow'],
+            ['left_elbow', 'left_wrist'],
+            ['right_shoulder', 'right_elbow'],
+            ['right_elbow', 'right_wrist'],
+            ['left_shoulder', 'left_hip'],
+            ['right_shoulder', 'right_hip'],
+            ['left_hip', 'right_hip'],
+            ['left_hip', 'left_knee'],
+            ['left_knee', 'left_ankle'],
+            ['right_hip', 'right_knee'],
+            ['right_knee', 'right_ankle']
+        ];
+
+        async function loadModel() {
+            try {
+                document.getElementById('status').textContent = 'Loading MoveNet model...';
+                document.getElementById('status').className = 'loading';
+
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+                };
+                detector = await poseDetection.createDetector(
+                    poseDetection.SupportedModels.MoveNet,
+                    detectorConfig
+                );
+
+                document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+                document.getElementById('status').className = 'ready';
+                document.getElementById('startBtn').disabled = false;
+
+                displayKeypointsList();
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Error loading model.';
+                console.error('Error:', error);
+            }
+        }
+
+        function displayKeypointsList() {
+            const list = document.getElementById('keypointsList');
+            keypoints.forEach(kp => {
+                const item = document.createElement('div');
+                item.className = 'keypoint-item';
+                item.innerHTML = `
+                    <div class="keypoint-dot"></div>
+                    <div class="keypoint-name">${kp.replace('_', ' ')}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+
+                video.addEventListener('loadeddata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    isDetecting = true;
+                    detectPose();
+                });
+
+                document.getElementById('startBtn').classList.add('hidden');
+                document.getElementById('stopBtn').classList.remove('hidden');
+                document.getElementById('status').textContent = '📹 Detecting poses...';
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Could not access webcam.';
+                console.error('Webcam error:', error);
+            }
+        }
+
+        function stopWebcam() {
+            isDetecting = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('stopBtn').classList.add('hidden');
+            document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+            document.getElementById('status').className = 'ready';
+        }
+
+        async function detectPose() {
+            if (!isDetecting) return;
+
+            const poses = await detector.estimatePoses(video);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (poses.length > 0) {
+                const pose = poses[0];
+                drawSkeleton(pose.keypoints);
+                updateStats(pose);
+            }
+
+            // Calculate FPS
+            frameCount++;
+            const currentTime = Date.now();
+            if (currentTime - lastTime >= 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+
+            animationId = requestAnimationFrame(detectPose);
+        }
+
+        function drawSkeleton(keypoints) {
+            // Draw lines
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 3;
+
+            adjacentKeyPoints.forEach(([start, end]) => {
+                const startPoint = keypoints.find(kp => kp.name === start);
+                const endPoint = keypoints.find(kp => kp.name === end);
+
+                if (startPoint && endPoint && startPoint.score > 0.3 && endPoint.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.moveTo(startPoint.x, startPoint.y);
+                    ctx.lineTo(endPoint.x, endPoint.y);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw keypoints
+            keypoints.forEach(keypoint => {
+                if (keypoint.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(keypoint.x, keypoint.y, 6, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function updateStats(pose) {
+            document.getElementById('poseCount').textContent = '1';
+            
+            const avgConfidence = pose.keypoints.reduce((sum, kp) => sum + kp.score, 0) / pose.keypoints.length;
+            document.getElementById('confidence').textContent = Math.round(avgConfidence * 100) + '%';
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startWebcam);
+        document.getElementById('stopBtn').addEventListener('click', stopWebcam);
+
+        loadModel();
+    </script>
+</body>
+</html>
