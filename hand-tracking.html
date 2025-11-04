@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Tracking Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/handtrackjs@0.1.1/dist/handtrack.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            color: #764ba2;
+            transform: translateX(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        #status {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        #status.loading {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        #status.ready {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        #status.error {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+            background: #667eea;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .danger-btn {
+            background: #ef5350;
+        }
+
+        .danger-btn:hover {
+            background: #e53935;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        video {
+            width: 100%;
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .detection-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .detection-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .detection-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .detection-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .detection-icon {
+            font-size: 2em;
+        }
+
+        .detection-details {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .detection-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .detection-confidence {
+            color: #667eea;
+            font-size: 0.9em;
+        }
+
+        .gesture-guide {
+            background: #f0f4f8;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .gesture-guide h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .gesture-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .gesture-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .gesture-card-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .gesture-card-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .explanation {
+            background: #f0f4f8;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .explanation h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .explanation p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .explanation ul {
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin-bottom: 10px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← Back to Learning Hub</a>
+        
+        <h1>✋ Hand Tracking & Detection</h1>
+        <p class="subtitle">Real-time hand and gesture detection</p>
+
+        <div class="info-box">
+            <h3>What is Hand Tracking?</h3>
+            <p>
+                Hand tracking uses computer vision to detect and track hand positions in real-time. 
+                This demo can detect open palms, closed fists, pointing gestures, and pinch gestures - 
+                the foundation of touchless interaction systems.
+            </p>
+            <p><strong>Applications:</strong></p>
+            <ul>
+                <li><strong>AR/VR:</strong> Touchless interaction in virtual environments</li>
+                <li><strong>Sign Language:</strong> Translation and communication assistance</li>
+                <li><strong>Gaming:</strong> Gesture-based game controls</li>
+                <li><strong>Medical:</strong> Touchless interfaces in sterile environments</li>
+                <li><strong>Retail:</strong> Virtual try-ons and gesture shopping</li>
+            </ul>
+        </div>
+
+        <div id="status" class="loading">Loading hand tracking model...</div>
+
+        <div class="controls">
+            <button id="startBtn" disabled>🎥 Start Webcam</button>
+            <button id="stopBtn" class="danger-btn hidden">⏹️ Stop</button>
+        </div>
+
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="handsCount">0</div>
+                <div class="stat-label">Hands Detected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="gesturesCount">0</div>
+                <div class="stat-label">Total Detections</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="fps">0</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="confidence">0%</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+        </div>
+
+        <div class="detection-info">
+            <h3>Current Detections</h3>
+            <div class="detection-list" id="detectionList">
+                <p style="color: #666; text-align: center;">Start webcam to detect hands...</p>
+            </div>
+        </div>
+
+        <div class="gesture-guide">
+            <h3>🎯 Detectable Gestures</h3>
+            <div class="gesture-cards">
+                <div class="gesture-card">
+                    <div class="gesture-card-icon">🖐️</div>
+                    <div class="gesture-card-name">Open Hand</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-card-icon">✊</div>
+                    <div class="gesture-card-name">Closed Fist</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-card-icon">☝️</div>
+                    <div class="gesture-card-name">Point</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-card-icon">🤏</div>
+                    <div class="gesture-card-name">Pinch</div>
+                </div>
+                <div class="gesture-card">
+                    <div class="gesture-card-icon">👆</div>
+                    <div class="gesture-card-name">Face</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>🧠 How Hand Tracking Works</h3>
+            <p>
+                <strong>Handtrack.js Model:</strong> This demo uses a lightweight neural network trained 
+                specifically for hand detection. It can identify multiple hand types and gestures simultaneously.
+            </p>
+            <p><strong>The Detection Process:</strong></p>
+            <ul>
+                <li><strong>Video Frame Analysis:</strong> Each frame from your webcam is processed by the neural network</li>
+                <li><strong>Feature Extraction:</strong> The model identifies hand-like shapes and skin tones</li>
+                <li><strong>Bounding Box Prediction:</strong> For each hand detected, a box is drawn around it</li>
+                <li><strong>Gesture Classification:</strong> The model classifies the gesture type (open, closed, point, pinch)</li>
+                <li><strong>Confidence Scoring:</strong> Each detection includes a confidence score (0-100%)</li>
+            </ul>
+            <p>
+                <strong>Technical Details:</strong> The model runs entirely in your browser using TensorFlow.js. 
+                It processes video at 20-30 FPS on most devices. Bounding boxes show hand locations with labels 
+                indicating the detected gesture type and confidence level.
+            </p>
+            <p>
+                <strong>Real-World Use:</strong> This technology powers touchless payment systems, AR filters, 
+                sign language interpreters, and gesture-controlled interfaces in smart homes and vehicles.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let model;
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream;
+        let isDetecting = false;
+        let frameCount = 0;
+        let lastTime = Date.now();
+        let totalDetections = 0;
+
+        const modelParams = {
+            flipHorizontal: true,
+            maxNumBoxes: 20,
+            iouThreshold: 0.5,
+            scoreThreshold: 0.6,
+        };
+
+        const gestureIcons = {
+            'open': '🖐️',
+            'closed': '✊',
+            'point': '☝️',
+            'pinch': '🤏',
+            'face': '👆'
+        };
+
+        async function loadModel() {
+            try {
+                document.getElementById('status').textContent = 'Loading hand tracking model... This may take a moment.';
+                document.getElementById('status').className = 'loading';
+
+                model = await handTrack.load(modelParams);
+
+                document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+                document.getElementById('status').className = 'ready';
+                document.getElementById('startBtn').disabled = false;
+
+                console.log('Model loaded successfully');
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Error loading model. Please refresh the page.';
+                document.getElementById('status').className = 'error';
+                console.error('Error:', error);
+            }
+        }
+
+        async function startWebcam() {
+            try {
+                stream = await handTrack.startVideo(video);
+                
+                if (stream) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    isDetecting = true;
+                    detectHands();
+
+                    document.getElementById('startBtn').classList.add('hidden');
+                    document.getElementById('stopBtn').classList.remove('hidden');
+                    document.getElementById('status').textContent = '📹 Tracking hands...';
+                    document.getElementById('status').className = 'ready';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Could not access webcam. Check permissions.';
+                document.getElementById('status').className = 'error';
+                console.error('Webcam error:', error);
+            }
+        }
+
+        function stopWebcam() {
+            isDetecting = false;
+            handTrack.stopVideo(video);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('stopBtn').classList.add('hidden');
+            document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+            document.getElementById('status').className = 'ready';
+
+            document.getElementById('detectionList').innerHTML = '<p style="color: #666; text-align: center;">Start webcam to detect hands...</p>';
+            document.getElementById('handsCount').textContent = '0';
+        }
+
+        async function detectHands() {
+            if (!isDetecting) return;
+
+            const predictions = await model.detect(video);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (predictions.length > 0) {
+                model.renderPredictions(predictions, canvas, ctx, video);
+                updateDetectionList(predictions);
+                updateStats(predictions);
+                totalDetections++;
+                document.getElementById('gesturesCount').textContent = totalDetections;
+            } else {
+                document.getElementById('detectionList').innerHTML = '<p style="color: #666; text-align: center;">No hands detected - try showing your hand to the camera</p>';
+                document.getElementById('handsCount').textContent = '0';
+                document.getElementById('confidence').textContent = '0%';
+            }
+
+            // Calculate FPS
+            frameCount++;
+            const currentTime = Date.now();
+            if (currentTime - lastTime >= 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+
+            requestAnimationFrame(detectHands);
+        }
+
+        function updateDetectionList(predictions) {
+            const list = document.getElementById('detectionList');
+            list.innerHTML = '';
+
+            predictions.forEach((pred, index) => {
+                const item = document.createElement('div');
+                item.className = 'detection-item';
+                
+                const gestureType = pred.label.toLowerCase();
+                const icon = gestureIcons[gestureType] || '✋';
+                const confidence = Math.round(pred.score * 100);
+
+                item.innerHTML = `
+                    <div class="detection-icon">${icon}</div>
+                    <div class="detection-details">
+                        <div class="detection-label">${pred.label} Hand</div>
+                        <div class="detection-confidence">Confidence: ${confidence}%</div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function updateStats(predictions) {
+            document.getElementById('handsCount').textContent = predictions.length;
+            
+            if (predictions.length > 0) {
+                const avgConfidence = predictions.reduce((sum, pred) => sum + pred.score, 0) / predictions.length;
+                document.getElementById('confidence').textContent = Math.round(avgConfidence * 100) + '%';
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startWebcam);
+        document.getElementById('stopBtn').addEventListener('click', stopWebcam);
+
+        loadModel();
+    </script>
+</body>
+</html>
