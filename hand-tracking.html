@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Tracking Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            color: #764ba2;
+            transform: translateX(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        #status {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        #status.loading {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        #status.ready {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+            background: #667eea;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .danger-btn {
+            background: #ef5350;
+        }
+
+        .danger-btn:hover {
+            background: #e53935;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        video, canvas {
+            width: 100%;
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .landmarks-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .landmarks-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .hand-diagram {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .finger-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .finger-section h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .landmark-list {
+            list-style: none;
+        }
+
+        .landmark-list li {
+            padding: 5px 0;
+            font-size: 0.85em;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .landmark-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .explanation {
+            background: #f0f4f8;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .explanation h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .explanation p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .explanation ul {
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin-bottom: 10px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .gesture-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .gesture-box h4 {
+            color: #1565c0;
+            margin-bottom: 8px;
+        }
+
+        .gesture-box p {
+            color: #555;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← Back to Learning Hub</a>
+
+        <h1>✋ Hand Tracking</h1>
+        <p class="subtitle">Real-time hand and finger tracking with AI</p>
+
+        <div class="info-box">
+            <h3>What is Hand Tracking?</h3>
+            <p>
+                Hand tracking is the process of detecting and tracking the position of hands and fingers in real-time.
+                This demo uses MediaPipe Hands, which can detect 21 hand landmarks per hand, tracking every joint
+                and fingertip with high accuracy.
+            </p>
+            <p><strong>Applications:</strong></p>
+            <ul>
+                <li><strong>Gesture Controls:</strong> Control devices with hand gestures, touchless interfaces</li>
+                <li><strong>AR/VR:</strong> Virtual reality hand interactions, augmented reality overlays</li>
+                <li><strong>Sign Language:</strong> Real-time sign language recognition and translation</li>
+                <li><strong>Gaming:</strong> Hand-controlled games, motion capture</li>
+                <li><strong>Accessibility:</strong> Assistive technology for people with disabilities</li>
+            </ul>
+        </div>
+
+        <div id="status" class="loading">Loading MediaPipe Hands model...</div>
+
+        <div class="controls">
+            <button id="startBtn" disabled>🎥 Start Webcam</button>
+            <button id="stopBtn" class="danger-btn hidden">⏹️ Stop</button>
+        </div>
+
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="handCount">0</div>
+                <div class="stat-label">Hands Detected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="confidence">0%</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="fps">0</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="landmarkCount">0</div>
+                <div class="stat-label">Landmarks Tracked</div>
+            </div>
+        </div>
+
+        <div class="landmarks-info">
+            <h3>21 Hand Landmarks Per Hand</h3>
+            <div class="hand-diagram">
+                <div class="finger-section">
+                    <h4>🤚 Palm & Wrist</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>Wrist (0)</li>
+                    </ul>
+                </div>
+                <div class="finger-section">
+                    <h4>👍 Thumb</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>CMC (1)</li>
+                        <li><div class="landmark-dot"></div>MCP (2)</li>
+                        <li><div class="landmark-dot"></div>IP (3)</li>
+                        <li><div class="landmark-dot"></div>Tip (4)</li>
+                    </ul>
+                </div>
+                <div class="finger-section">
+                    <h4>☝️ Index Finger</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>MCP (5)</li>
+                        <li><div class="landmark-dot"></div>PIP (6)</li>
+                        <li><div class="landmark-dot"></div>DIP (7)</li>
+                        <li><div class="landmark-dot"></div>Tip (8)</li>
+                    </ul>
+                </div>
+                <div class="finger-section">
+                    <h4>🖕 Middle Finger</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>MCP (9)</li>
+                        <li><div class="landmark-dot"></div>PIP (10)</li>
+                        <li><div class="landmark-dot"></div>DIP (11)</li>
+                        <li><div class="landmark-dot"></div>Tip (12)</li>
+                    </ul>
+                </div>
+                <div class="finger-section">
+                    <h4>🖖 Ring Finger</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>MCP (13)</li>
+                        <li><div class="landmark-dot"></div>PIP (14)</li>
+                        <li><div class="landmark-dot"></div>DIP (15)</li>
+                        <li><div class="landmark-dot"></div>Tip (16)</li>
+                    </ul>
+                </div>
+                <div class="finger-section">
+                    <h4>🤙 Pinky</h4>
+                    <ul class="landmark-list">
+                        <li><div class="landmark-dot"></div>MCP (17)</li>
+                        <li><div class="landmark-dot"></div>PIP (18)</li>
+                        <li><div class="landmark-dot"></div>DIP (19)</li>
+                        <li><div class="landmark-dot"></div>Tip (20)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="gesture-box">
+                <h4>Try These Gestures!</h4>
+                <p>
+                    Wave your hand, make a fist, point with your finger, or show a peace sign.
+                    The AI tracks all 21 landmarks in real-time!
+                </p>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>🧠 How Hand Tracking Works</h3>
+            <p>
+                <strong>MediaPipe Hands:</strong> This demo uses Google's MediaPipe Hands model, which employs
+                machine learning to infer 21 3D hand landmarks from just a single image frame.
+            </p>
+            <p><strong>The Detection Process:</strong></p>
+            <ul>
+                <li><strong>Palm Detection:</strong> First, a palm detector identifies the hand region in the frame</li>
+                <li><strong>Hand Landmark Model:</strong> A separate model predicts 21 hand keypoint coordinates within the detected region</li>
+                <li><strong>3D Coordinates:</strong> Each landmark has x, y (image coordinates) and z (depth) values</li>
+                <li><strong>Tracking:</strong> The model maintains hand tracking across frames for smooth, real-time performance</li>
+                <li><strong>Multi-hand Support:</strong> Can detect and track multiple hands simultaneously</li>
+            </ul>
+            <p>
+                <strong>Hand Landmarks:</strong> The 21 landmarks represent:
+            </p>
+            <ul>
+                <li>Wrist (1 point)</li>
+                <li>Thumb (4 points: CMC, MCP, IP, TIP)</li>
+                <li>Index, Middle, Ring, Pinky fingers (4 points each: MCP, PIP, DIP, TIP)</li>
+            </ul>
+            <p>
+                <strong>Technical Details:</strong> MediaPipe Hands uses a two-stage pipeline - palm detection followed
+                by hand landmark localization. This approach is computationally efficient and enables real-time
+                performance even on mobile devices. The model outputs normalized coordinates (0-1 range) which are
+                then scaled to match the video dimensions.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let detector;
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream;
+        let isDetecting = false;
+        let animationId;
+        let frameCount = 0;
+        let lastTime = Date.now();
+
+        // Hand landmark connections (for drawing skeleton)
+        const connections = [
+            // Thumb
+            [0, 1], [1, 2], [2, 3], [3, 4],
+            // Index finger
+            [0, 5], [5, 6], [6, 7], [7, 8],
+            // Middle finger
+            [0, 9], [9, 10], [10, 11], [11, 12],
+            // Ring finger
+            [0, 13], [13, 14], [14, 15], [15, 16],
+            // Pinky
+            [0, 17], [17, 18], [18, 19], [19, 20],
+            // Palm
+            [5, 9], [9, 13], [13, 17]
+        ];
+
+        async function loadModel() {
+            try {
+                document.getElementById('status').textContent = 'Loading MediaPipe Hands model...';
+                document.getElementById('status').className = 'loading';
+
+                const model = handPoseDetection.SupportedModels.MediaPipeHands;
+                const detectorConfig = {
+                    runtime: 'tfjs',
+                    modelType: 'full',
+                    maxHands: 2,
+                    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands'
+                };
+
+                detector = await handPoseDetection.createDetector(model, detectorConfig);
+
+                document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+                document.getElementById('status').className = 'ready';
+                document.getElementById('startBtn').disabled = false;
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Error loading model: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 640,
+                        height: 480
+                    }
+                });
+                video.srcObject = stream;
+
+                video.addEventListener('loadeddata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    isDetecting = true;
+                    detectHands();
+                });
+
+                document.getElementById('startBtn').classList.add('hidden');
+                document.getElementById('stopBtn').classList.remove('hidden');
+                document.getElementById('status').textContent = '👋 Detecting hands...';
+            } catch (error) {
+                document.getElementById('status').textContent = '✗ Could not access webcam: ' + error.message;
+                console.error('Webcam error:', error);
+            }
+        }
+
+        function stopWebcam() {
+            isDetecting = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('stopBtn').classList.add('hidden');
+            document.getElementById('status').textContent = '✓ Model Ready! Click "Start Webcam" to begin.';
+            document.getElementById('status').className = 'ready';
+
+            // Reset stats
+            document.getElementById('handCount').textContent = '0';
+            document.getElementById('landmarkCount').textContent = '0';
+            document.getElementById('confidence').textContent = '0%';
+        }
+
+        async function detectHands() {
+            if (!isDetecting) return;
+
+            try {
+                const hands = await detector.estimateHands(video, {
+                    flipHorizontal: false
+                });
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (hands.length > 0) {
+                    hands.forEach(hand => {
+                        drawHand(hand);
+                    });
+                    updateStats(hands);
+                } else {
+                    document.getElementById('handCount').textContent = '0';
+                    document.getElementById('landmarkCount').textContent = '0';
+                    document.getElementById('confidence').textContent = '0%';
+                }
+
+                // Calculate FPS
+                frameCount++;
+                const currentTime = Date.now();
+                if (currentTime - lastTime >= 1000) {
+                    document.getElementById('fps').textContent = frameCount;
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+            } catch (error) {
+                console.error('Detection error:', error);
+            }
+
+            animationId = requestAnimationFrame(detectHands);
+        }
+
+        function drawHand(hand) {
+            const keypoints = hand.keypoints;
+
+            // Draw connections (skeleton)
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+
+            connections.forEach(([startIdx, endIdx]) => {
+                const start = keypoints[startIdx];
+                const end = keypoints[endIdx];
+
+                if (start && end) {
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw keypoints
+            keypoints.forEach((keypoint, index) => {
+                ctx.beginPath();
+                ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
+
+                // Color code different parts
+                if (index === 0) {
+                    ctx.fillStyle = '#ff0000'; // Wrist
+                } else if ([4, 8, 12, 16, 20].includes(index)) {
+                    ctx.fillStyle = '#ffff00'; // Fingertips
+                } else {
+                    ctx.fillStyle = '#ff00ff'; // Joints
+                }
+
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw landmark number
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Arial';
+                ctx.fillText(index.toString(), keypoint.x + 7, keypoint.y + 4);
+            });
+
+            // Draw handedness label
+            if (hand.handedness) {
+                const wrist = keypoints[0];
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(wrist.x - 30, wrist.y - 35, 60, 25);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(hand.handedness, wrist.x, wrist.y - 17);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function updateStats(hands) {
+            document.getElementById('handCount').textContent = hands.length;
+
+            const totalLandmarks = hands.reduce((sum, hand) => sum + hand.keypoints.length, 0);
+            document.getElementById('landmarkCount').textContent = totalLandmarks;
+
+            // Calculate average confidence (using score if available)
+            if (hands[0].keypoints[0].score !== undefined) {
+                const allScores = hands.flatMap(hand => hand.keypoints.map(kp => kp.score || 0));
+                const avgConfidence = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+                document.getElementById('confidence').textContent = Math.round(avgConfidence * 100) + '%';
+            } else {
+                document.getElementById('confidence').textContent = 'N/A';
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startWebcam);
+        document.getElementById('stopBtn').addEventListener('click', stopWebcam);
+
+        // Load model on page load
+        loadModel();
+    </script>
+</body>
+</html>
